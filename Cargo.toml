@@ -1,0 +1,20 @@
+[package]
+name = "zoomies"
+version = "0.1.0"
+edition = "2024"
+description = "momentum scrolling for touchpads on wlroots-based wayland compositors"
+license = "MIT"
+repository = "https://github.com/csutora/zoomies"
+
+[dependencies]
+evdev = "0.12"
+clap = { version = "4", features = ["derive"] }
+wayland-client = "0.31"
+wayland-protocols-wlr = { version = "0.3", features = ["client"] }
+anyhow = "1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
