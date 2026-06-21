@@ -66,7 +66,7 @@ in
 
   config = lib.mkIf cfg.enable {
     services.udev.extraRules = lib.mkIf cfg.manageDeviceAccess ''
-      ACTION=="add", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*${cfg.deviceName}*", TAG+="uaccess"
+      ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*${cfg.deviceName}*", TAG+="uaccess"
     '';
 
     systemd.user.services.zoomies = {
