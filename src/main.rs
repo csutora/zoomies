@@ -117,12 +117,6 @@ fn ts_us(t: SystemTime) -> u64 {
         .as_micros() as u64
 }
 
-fn find_device(name: &str) -> Option<evdev::Device> {
-    evdev::enumerate()
-        .map(|(_, d)| d)
-        .find(|d| d.name().is_some_and(|n| n.contains(name)))
-}
-
 fn run_listener(mut dev: evdev::Device, tx: &mpsc::Sender<Msg>, args: &Args) {
     let dir = if args.traditional { 1.0 } else { -1.0 };
     let mut scrolling = false;
@@ -297,16 +291,34 @@ fn main() -> anyhow::Result<()> {
     let (tx, rx) = mpsc::channel::<Msg>();
 
     let in_args = args.clone();
-    thread::Builder::new()
-        .name("listener".into())
-        .spawn(move || {
-            loop {
-                match find_device(&in_args.device_name) {
-                    Some(dev) => run_listener(dev, &tx, &in_args),
-                    None => thread::sleep(Duration::from_secs(2)),
-                }
+    thread::Builder::new().name("scanner".into()).spawn(move || {
+        let mut active: std::collections::HashSet<std::path::PathBuf> = std::collections::HashSet::new();
+        let (done_tx, done_rx) = mpsc::channel::<std::path::PathBuf>();
+        loop {
+            while let Ok(p) = done_rx.try_recv() {
+                active.remove(&p);
             }
-        })?;
+            for (path, dev) in evdev::enumerate() {
+                if active.contains(&path)
+                    || !dev.name().is_some_and(|n| n.contains(&in_args.device_name))
+                {
+                    continue;
+                }
+                active.insert(path.clone());
+                let tx = tx.clone();
+                let done_tx = done_tx.clone();
+                let args = in_args.clone();
+                let p = path.clone();
+                let _ = thread::Builder::new()
+                    .name(format!("listener:{}", path.display()))
+                    .spawn(move || {
+                        run_listener(dev, &tx, &args);
+                        let _ = done_tx.send(p);
+                    });
+            }
+            thread::sleep(Duration::from_secs(2));
+        }
+    })?;
 
     run_emitter(rx, args)
 }
