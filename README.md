@@ -42,7 +42,15 @@ add zoomies to your flake inputs:
 }
 ```
 
-the module runs zoomies as a user service in your graphical session, and adds a udev rule so the active-session user can read the touchpad.
+the module runs zoomies as a user service in your graphical session.
+
+your user needs read access to the touchpad's `/dev/input/eventN`. on most distros that means being in the `input` group:
+
+```nix
+users.users.your-username.extraGroups = [ "input" ];
+```
+
+then relog (or reboot) for the group to take effect.
 
 ### manual
 
@@ -70,8 +78,6 @@ services.zoomies = {
     stopThreshold = 40.0;          # speed at which the glide stops
     tickMs = 8;                    # ms between emitted scroll frames
     naturalScroll = true;          # follow natural scroll direction
-
-    manageDeviceAccess = true;     # add the udev uaccess rule for the device
 };
 ```
 

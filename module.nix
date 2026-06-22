@@ -56,19 +56,9 @@ in
       default = true;
       description = "whether momentum follows the natural scroll direction";
     };
-
-    manageDeviceAccess = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "grant the active-session user read access to the device via a udev uaccess rule";
-    };
   };
 
   config = lib.mkIf cfg.enable {
-    services.udev.extraRules = lib.mkIf cfg.manageDeviceAccess ''
-      ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="*${cfg.deviceName}*", TAG+="uaccess"
-    '';
-
     systemd.user.services.zoomies = {
       description = "zoomies momentum scrolling";
       wantedBy = [ "graphical-session.target" ];
